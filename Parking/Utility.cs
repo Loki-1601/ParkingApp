@@ -13,6 +13,8 @@ namespace ParkingApp.Parking
 {
     public class Utility
     {
+
+        private static int MaxPermits = 50;
         private static readonly ParkingContext _db = new ParkingContext();
 
 
@@ -22,7 +24,7 @@ namespace ParkingApp.Parking
             using (var db = new ParkingContext())
             {
 
-                db.Database.ExecuteSqlRaw("DROP TABLE IF EXISTS ParkingAssignment; DROP TABLE IF EXISTS Permit; DROP TABLE IF EXISTS ParkingReservation;");
+                db.Database.ExecuteSqlRaw("DROP TABLE IF EXISTS ParkingAssignment; DROP TABLE IF EXISTS Permit; DROP TABLE IF EXISTS ParkingReservation; ");
 
                 var DDLcommand = @"CREATE TABLE ParkingReservation (Id int auto_increment NOT NULL, 
                                     PlateState varchar(45) DEFAULT NULL,
@@ -40,12 +42,13 @@ namespace ParkingApp.Parking
                                     );";
                 db.Database.ExecuteSqlRaw(DDLcommand2);
 
+
+
                 var DDLcommand3 = @"CREATE TABLE ParkingAssignment (
                                     Id int auto_increment NOT NULL,
-                                    PlateState varchar(45) DEFAULT NULL,
-                                    PlateNumber varchar(45) DEFAULT NULL,
                                     PermitId int DEFAULT NULL,
                                     ParkingReservationId int DEFAULT NULL,
+                                    date date ,
                                     PRIMARY KEY (Id),
                                     KEY PermitId_idx (PermitId),
                                     KEY ParkingReservationId_idx (ParkingReservationId),
@@ -55,8 +58,14 @@ namespace ParkingApp.Parking
                 db.Database.ExecuteSqlRaw(DDLcommand3);
 
 
+                // generate 50 permits
+                for (int i = 0; i < MaxPermits; i++)
+                {
+                    _db.Permits.Add(new Permit { PermitNumber = i + 1 });
+                }
 
-                //db.SaveChanges();
+                _db.SaveChanges();
+                db.SaveChanges();
             }
 
 
@@ -64,152 +73,81 @@ namespace ParkingApp.Parking
 
         public static void dropParkingAssignments()
         {
-            // _db.ParkingAssignments.RemoveRange(_db.ParkingAssignments);
-            // _db.SaveChanges();
-            _db.Database.ExecuteSqlRaw("DELETE FROM ParkingAssignment;");
+            _db.ParkingAssignments.RemoveRange(_db.ParkingAssignments);
+            _db.SaveChanges();
+
         }
 
-        public static void RemoveExpiredReservations()
+
+
+
+        public static void seedParkingReservations()
         {
-            using (var db = new ParkingContext())
+            int seedMax = 5_000;
+            string sql = "delete from parkingReservation where true;";
+            // Loop to insert reservations for 10 more days
+            var startDate = DateTime.Now.AddDays(new Random().NextInt64(2, 12) * -1);
+            for (int i = 1; i <= seedMax; i++) // Starting from Id 2 to 11
             {
-                var query = from parkingAssignment in db.ParkingAssignments
+                string startDateStr = startDate.AddDays(new Random().NextInt64(2, 7)).ToString("yyyy-MM-dd");
+                string endDateStr = DateTime.Now.AddDays(new Random().NextInt64(30, 80)).ToString("yyyy-MM-dd");
 
-                            select parkingAssignment;
+                sql += $"INSERT INTO ParkingReservation ( PlateState, PlateNumber, StartDate, EndDate) " +
+                             $"VALUES ('CA', {i + 1}, '{startDateStr}', '{endDateStr}');";
 
-                List<ParkingAssignment> toBeDeleted = [];
-
-
-                //loop over parking assignment
-                // foreach (ParkingAssignment parkingAssignment in db.ParkingAssignments)
-                // {
-                //     var prId = parkingAssignment.ParkingReservationId;
-                //     var permitId = parkingAssignment.PermitId;
-
-                //     // for parkingAssignment.reservations ,
-                //     ParkingReservation reservation = (ParkingReservation)db.ParkingReservations.Where(x => x.Id == prId).Select(x => x);
-                //     var endDate = reservation.EndDate;
-                //     //var date = LocalDateTime.FromDateTime(DateTime.Now).Date;
-                //     //var endDate1 = LocalDateTime.FromDateTime(endDate).Date;
-
-                //     // if expired remove reservation
-                //     if (DateTime.Now > endDate)
-                //     {
-
-                //         //find permit related to parking assignment
-                //         Permit permit = (Permit)db.Permits.Where(x => x.Id == permitId).Select(x => x);
-                //         // permit.Status = 0; //maker permit as available
-
-                //         // remove related assignments
-                //         toBeDeleted.Add(parkingAssignment);
-
-                //         db.ParkingReservations.Remove(reservation);
-                //         db.SaveChanges();
-
-                //     }
-                // }
-                // foreach (ParkingAssignment parkingAssignment in toBeDeleted)
-                // {
-                //     db.ParkingAssignments.Remove(parkingAssignment);
-                // }
             }
 
-
+            _db.Database.ExecuteSqlRaw(sql);
+            _db.SaveChanges();
+            Console.WriteLine("Inserted 10 days of parking reservations.");
         }
 
-        public static void refreshParkingAssignments(){
+        public static void refreshParkingAssignments()
+        {
             dropParkingAssignments();
             CreatePermitAssignmentsForReservations();
         }
+
+
 
 
         public static void CreatePermitAssignmentsForReservations()
         {
             using (var db = new ParkingContext())
             {
-                           
-                List<ParkingReservation> parkingReservations = new List<ParkingReservation>();
-                string queryToSetAllReservations = string.Format("SELECT * FROM ParkingReservation;");
-                using (var command = db.Database.GetDbConnection().CreateCommand()) {
-                    command.CommandText = queryToSetAllReservations;
-                    db.Database.OpenConnection();
-                    using (var reader = command.ExecuteReader()) {
-                        while(reader.Read()) {
-                            var id = reader.GetInt32("Id");
-                            var state = reader.GetString("PlateState");
-                            var plate = reader.GetString("PlateNumber");
-                            var start = reader.GetDateTime("StartDate");
-                            var end = reader.GetDateTime("EndDate");
-                            Console.WriteLine("ID = " + start);
-                            var reservation = new ParkingReservation { Id = id, PlateState = state, PlateNumber = plate, StartDate = start, EndDate = end};
-                            parkingReservations.Add(reservation);
-                        }
-                    }
-                }
-                Console.WriteLine("ALL Reservations");
-                Console.WriteLine(parkingReservations);
-                // var parkingReservations = (from parkingReservation in db.ParkingReservations select parkingReservation).ToList();
-                var AssignmentsMax = 50;
 
-                // permit for 2024-11-1 2024-11-7, [p11-1:{1,..50}],...,p11-7{1,50})
-                foreach (ParkingReservation parkingReservation in parkingReservations)
+                // get todays reservations
+                var todayReservations = _db.ParkingReservations.Where(x => x.StartDate <= DateTime.Now.Date && x.EndDate.Date >= DateTime.Now.Date);
+                Console.WriteLine("raw query: " + todayReservations.ToQueryString());
+
+                // for each parking reservation ,make and add a new parking
+                foreach (var pr in todayReservations.ToList().GetRange(0, todayReservations.Count()))
                 {
-                    var startDate = parkingReservation.StartDate;
-                    var isReservationInvalid = parkingReservation.StartDate > DateTime.Now.Date || parkingReservation.EndDate < DateTime.Now.Date;
-                    var assignmentsCreatedCount = db.ParkingAssignments?.Count();
+                    // if (_db.ParkingAssignments.Count() > 50)
+                    // {
+                    //     break;
+                    // }
 
-                    if (assignmentsCreatedCount > AssignmentsMax)
-                    {
-                        // alert the manager
-                        Console.WriteLine("Warning: max assignments issued");
-                        break;
-                    }
-
-
-                    if (isReservationInvalid)
-                    {
-                        continue;
-                    }
-
-                    //Retrieve first permit without any parking assignment
-
-                    // Permit permit = db.Permits.First(r =>r.);
-                    List<Permit> permits = new List<Permit>();
-                    string queryToGetAllPermits = string.Format("SELECT * FROM Permit;");
-                    using (var command = db.Database.GetDbConnection().CreateCommand())
-                    {
-                        command.CommandText = queryToGetAllPermits;
-                        db.Database.OpenConnection();
-                        using (var reader = command.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                var id = reader.GetInt32("Id");
-                                var permitNum = reader.GetInt32("PermitNumber");
-      
-                                var currentPermit = new Permit { Id = id, PermitNumber = permitNum };
-                                permits.Add(currentPermit);
-                            }
-                        }
-                    }
-
-                    // Before Permit permit = db.Permits.FirstOrDefault(r => r.ParkingAssignments == null || !r.ParkingAssignments.Any());
-                    Permit permit = permits.FirstOrDefault(r => r.ParkingAssignments == null || !r.ParkingAssignments.Any());
+                    Permit permit = _db.Permits.FirstOrDefault(p => !p.ParkingAssignments
+                                                .Any(pa => pa.ParkingReservation.StartDate.Date <= DateTime.Now.Date
+                                                        && pa.ParkingReservation.EndDate.Date >= DateTime.Now.Date));
 
                     if (permit == null)
                     {
-                        Console.WriteLine("There are no more permits available for " + DateTime.Now.Date);
+                        Console.WriteLine($"Error: max permits: {MaxPermits} issued for today. Admin supervision required!");
                         break;
                     }
 
-                    // permit.Status = 1;
-                    //Create reservation, i.e, Parking Assignment
-                    var newParkingAssignment = new ParkingAssignment { PermitId = permit.Id, ParkingReservationId = parkingReservation.Id, PlateState = parkingReservation.PlateState, PlateNumber = parkingReservation.PlateNumber };
+                    // insert a new parking assignment
+                    ParkingAssignment pa = new ParkingAssignment { ParkingReservationId = pr.Id, PermitId = permit.Id, date = DateTime.Now.Date };
+                    _db.ParkingAssignments.Add(pa);
 
-                    db.SaveChanges();
-
+                    _db.SaveChanges();
                 }
+
+
             }
+
         }
 
         public static void EnterNewReservations()
@@ -278,7 +216,7 @@ namespace ParkingApp.Parking
 
                                 }
 
-                                parkingAssignment = new ParkingAssignment { PlateState = elementList[0], PlateNumber = elementList[1], ParkingReservationId = parkingReservation.Id, PermitId = permitId };
+                                parkingAssignment = new ParkingAssignment { ParkingReservationId = parkingReservation.Id, PermitId = permitId };
 
                             }
 
@@ -290,7 +228,7 @@ namespace ParkingApp.Parking
                             string queryString = String.Format(@"INSERT INTO ParkingReservation (PlateState, PlateNumber, StartDate, EndDate) VALUES ('{1}',{2},'{3}','{4}');", parkingReservation.Id, parkingReservation.PlateState, parkingReservation.PlateNumber, sDate, eDate);
 
                             // FIXED: This query had syntax and logical error. Fixed now. 
-                            string queryString3 = String.Format(@"UPDATE ParkingAssignment set Id = {0}, PlateState = '{1}', PlateNumber = {2}, PermitId = {3}, ParkingReservationId = {4} WHERE PermitId = {3};", parkingAssignment.Id, parkingAssignment.PlateState, parkingAssignment.PlateNumber, parkingAssignment.PermitId, parkingAssignment.ParkingReservationId);
+                            string queryString3 = String.Format(@"UPDATE ParkingAssignment set PermitId = {3}, ParkingReservationId = {4} WHERE Id = {3};", parkingAssignment.PermitId, parkingAssignment.ParkingReservationId, parkingAssignment.Id);
 
                             string queryString4 = String.Format(@"UPDATE Permit set Status = 1 WHERE Id = {0};", permitId);
 
@@ -326,6 +264,25 @@ namespace ParkingApp.Parking
                     }
                 }
                 db.SaveChanges();
+            }
+        }
+
+        public static void scheduleDailyRun()
+        {
+            while (true)
+            {
+                DateTime now = DateTime.Now;
+                if (now.Hour == 2) // Check if the current hour is 00 (midnight)
+                {
+                    Console.WriteLine("Running...");
+                    dropParkingAssignments();
+                    refreshParkingAssignments();
+                    Console.WriteLine("Complete...");
+                }
+                Console.WriteLine($"Next run scheduled at: {DateTime.Now.AddHours(24).ToString("yyyy/MM/dd hh:mm:ss")}");
+
+                // Sleep for 12 hours (in milliseconds)
+                Thread.Sleep(12 * 60 * 60 * 1000);
             }
         }
     }

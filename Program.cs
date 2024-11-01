@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+// Example in Program.cs
 
 var pc = new ParkingContext();
 
@@ -47,10 +48,13 @@ while (true)
 
     var options = new Dictionary<string, Action>
         {
-            { "1", Utility.RemoveExpiredReservations },
-            { "2", Utility.CreatePermitAssignmentsForReservations },
-            { "3", Utility.EnterNewReservations },
-            { "4", Utility.refreshParkingAssignments }
+
+            { "0", Utility.resetDb },
+            {"1", Utility.seedParkingReservations},
+            { "2", Utility.refreshParkingAssignments },
+            { "3", Utility.CreatePermitAssignmentsForReservations },
+            { "4", Utility.EnterNewReservations },
+            {"5", Utility.scheduleDailyRun},
         };
 
     // Display options to the user using a loop

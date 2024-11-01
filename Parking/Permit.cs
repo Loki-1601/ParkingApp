@@ -15,8 +15,7 @@ namespace ParkingApp.Parking
 
         // 0 means available and 1 is unavailable
         // public int Status { get; set; }
-        public virtual List<Permit>? Permits { get; set; }
-
+        // public virtual List<Permit>? Permits { get; set; }
         // Navigation property for the related ParkingAssignments
         public virtual List<ParkingAssignment>? ParkingAssignments { get; set; }
     }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using NodaTime;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace ParkingApp.Parking
@@ -12,7 +13,7 @@ namespace ParkingApp.Parking
     [Table("parkingReservation")]
     public class ParkingReservation
     {
-        [Column("id")]
+       
         public int Id { get; set; }
         public string? PlateState { get; set; }
         public string? PlateNumber { get; set; }
@@ -20,7 +21,7 @@ namespace ParkingApp.Parking
         public DateTime EndDate { get; set; }
 
 
-        public virtual List<ParkingReservation>? ParkingReservations { get; set; }
+        // public virtual List<ParkingReservation>? ParkingReservations { get; set; }
 
 
 
