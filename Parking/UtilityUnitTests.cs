@@ -1,71 +1,68 @@
 using System;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
-using Moq;
 using Xunit;
 
 namespace ParkingApp.Parking.Tests
 {
     public class UtilityUnitTests
     {
-        private readonly Mock<ParkingContext> _mockContext;
-
-        public UtilityUnitTests()
+        private ParkingContext GetInMemoryDbContext()
         {
-            // Initialize the mock DbContext
-            _mockContext = new Mock<ParkingContext>();
+            
+            var options = new DbContextOptionsBuilder<ParkingContext>()
+                // .UseInMemoryDatabase(databaseName: "TestDatabase")
+                .UseMySQL("server=localhost;database=dev_db;user=root;password=Kamala@16")
+                .Options;
+
+            return new ParkingContext(options);
         }
 
         [Fact]
         public void ResetDb_ShouldDropAndRecreateTables()
         {
+            // Arrange, Act, Assert
+
             // Arrange
-            var mockDbContext = new Mock<ParkingContext>();
-            mockDbContext.Setup(db => db.Database.ExecuteSqlRaw(It.IsAny<string>())).Verifiable();
+            Utility.resetDb();
+            var dbContext = GetInMemoryDbContext();
 
             // Act
-            Utility.resetDb();
+            var tablesExist = dbContext.ParkingReservations.Any();
 
             // Assert
-            mockDbContext.Verify(db => db.Database.ExecuteSqlRaw(It.IsAny<string>()), Times.Exactly(3));
+            Assert.False(tablesExist, "Tables should be reset and empty.");
         }
 
         [Fact]
+
         public void DropParkingAssignments_ShouldRemoveAllAssignments()
         {
             // Arrange
-            var mockDbSet = new Mock<DbSet<ParkingAssignment>>();
-            _mockContext.Setup(db => db.ParkingAssignments).Returns(mockDbSet.Object);
+            var dbContext = GetInMemoryDbContext();
+            dbContext.ParkingAssignments.Add(new ParkingAssignment { PermitId = 1, ParkingReservationId = 1 });
+            dbContext.SaveChanges();
 
             // Act
             Utility.dropParkingAssignments();
 
             // Assert
-            _mockContext.Verify(db => db.ParkingAssignments.RemoveRange(mockDbSet.Object), Times.Once);
-            _mockContext.Verify(db => db.SaveChanges(), Times.Once);
+            Assert.Empty(dbContext.ParkingAssignments.ToList());
         }
+
 
         [Fact]
         public void SeedParkingReservations_ShouldInsertReservations()
         {
             // Arrange
-            var mockDbContext = new Mock<ParkingContext>();
-            mockDbContext.Setup(db => db.Database.ExecuteSqlRaw(It.IsAny<string>())).Verifiable();
+            var dbContext = GetInMemoryDbContext();
 
             // Act
             Utility.seedParkingReservations();
 
             // Assert
-            mockDbContext.Verify(db => db.Database.ExecuteSqlRaw(It.IsAny<string>()), Times.Once);
-            mockDbContext.Verify(db => db.SaveChanges(), Times.Once);
+            Assert.True(dbContext.ParkingReservations.Count() > 0, "Should have seeded reservations.");
         }
 
-        [Fact]
-        public void ScheduleDailyRun_ShouldRunRefreshAtSpecificTime()
-        {
-            // Note: This test case is a bit trickier to automate because it involves time and threading.
-            // You might want to refactor the code to make it more testable.
-            Assert.True(true); // Placeholder test
-        }
     }
 }
