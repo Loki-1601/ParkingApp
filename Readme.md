@@ -24,7 +24,10 @@ problems/actions to be done:
 0. `git status` to see what pending changes exist
 1. `git add .` or `git add -p .` or `gi add filepattern` add all changes or selectively add all changes [n:no,d: no for all changes in this file, y:yes,a: yes for every cange in this file]
 2. `git commit -m "some short message about the code changes"` seal your changes 
-3. `git push remote branch_name` push the commited changes to your remote repo/github
+3. `git push remote branch_name` push the commited changes to your remote repo/github 
+
+- `git diff` see all diffs
+- `git diff --staged` see staged diffs
 
 ** remote = origin most times
 ** branch_name = main most times
