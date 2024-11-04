@@ -32,3 +32,5 @@ problems/actions to be done:
 ** remote = origin most times
 ** branch_name = main most times
 ** `git remote -v`
+
+** two or more devs should work on different branch and merge into main or develop or some branch dedicated for integrating changes from different developers
