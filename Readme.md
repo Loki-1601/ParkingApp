@@ -31,3 +31,4 @@ problems/actions to be done:
 
 ** remote = origin most times
 ** branch_name = main most times
+** `git remote -v`
