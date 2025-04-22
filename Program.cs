@@ -12,32 +12,33 @@ var options = new DbContextOptionsBuilder<ParkingContext>()
             .UseMySQL("server=localhost;database=dev_db;user=root;password=Kamala@16")
             .Options;
 
-        using (var pc = new ParkingContext(options))
+// initialize our system and database
+using (var pc = new ParkingContext(options))
+{
+    bool isInputValid = false;
+    while (!isInputValid)
+    {
+        Console.WriteLine("Do you want to start off with zero reservations and assignments?: [yes] or [no]");
+        var answer = Console.ReadLine().ToLower();
+        if (answer.Equals("yes"))
         {
-            bool isInputValid = false;
-            while (!isInputValid)
-            {
-                Console.WriteLine("Do you want to start off with zero reservations and assignments?");
-                var answer = Console.ReadLine().ToLower();
-                if (answer.Equals("yes"))
-                {
-                    Utility.resetDb();
-                    
-                    // Insert 50 permits using DbContext
-                    for (int i = 1; i <= 50; i++)
-                    {
-                        pc.Permits.Add(new Permit { PermitNumber = i });
-                    }
-                    pc.SaveChanges(); // Save all permits to the database
+            Utility.resetDb();
 
-                    break;
-                }
-                else if (answer.Equals("no"))
-                {
-                    break;
-                }
+            // Insert 50 permits using DbContext
+            for (int i = 1; i <= 50; i++)
+            {
+                pc.Permits.Add(new Permit { PermitNumber = i });
             }
+            pc.SaveChanges(); // Save all permits to the database
+
+            break;
         }
+        else if (answer.Equals("no"))
+        {
+            break;
+        }
+    }
+}
 
 
 /*
@@ -48,34 +49,68 @@ pc.Permit.Add(permit1);
 
 
 // Create a map of options using strings as keys
-        var optionsMap = new Dictionary<string, Action>
+var optionsMap = new Dictionary<string, Action>
         {
             { "0", Utility.resetDb },
             { "1", Utility.seedParkingReservations },
             { "2", Utility.refreshParkingAssignments },
             { "3", Utility.CreatePermitAssignmentsForReservations },
             { "4", Utility.EnterNewReservations },
-            { "5", Utility.scheduleDailyRun }
+            { "5", Utility.scheduleDailyRun },
+            { "6", Utility.parkingStats }
         };
 
-    // Display options to the user
-            Console.WriteLine("Select an option:");
-            foreach (var option in optionsMap)
-            {
-                Console.WriteLine($"{option.Key}: {option.Value.Method.Name}");
-            }
+// Display options to the user by printing on the console
+// Console.WriteLine("Select an option:");
+// foreach (var option in optionsMap)
+// {
+//     Console.WriteLine($"{option.Key}: {option.Value.Method.Name}");
+// }
 
-            // Get user input
-            string choice = Console.ReadLine();
-            if (optionsMap.ContainsKey(choice))
-            {
-                Console.WriteLine("User choice: " + choice);
-                // Execute the selected function
-                optionsMap[choice].Invoke();
-            }
-            else
-            {
-                Console.WriteLine("Invalid selection. Please try again.");
-            }
-        
-    
+// // Get user input from the console
+string choice = "";
+// if (!optionsMap.ContainsKey(choice))
+// {
+//     Console.WriteLine("Invalid selection. Please try again.");
+// }
+// else
+// {
+//     Console.WriteLine("User choice: " + choice);
+//     // Execute the selected function
+//     optionsMap[choice].Invoke();
+// }
+
+// loop and aske for choice or end loop
+while (true)
+{
+    Console.WriteLine("Do you want to continue? [yes] or [no]");
+    var answer = Console.ReadLine().ToLower();
+    if (answer.Equals("yes"))
+    {
+        // Display options to the user by printing on the console
+        Console.WriteLine("Select an option:");
+        foreach (var option in optionsMap)
+        {
+            Console.WriteLine($"{option.Key}: {option.Value.Method.Name}");
+        }
+
+        // Get user input from the console
+        choice = Console.ReadLine();
+        if (!optionsMap.ContainsKey(choice))
+        {
+            Console.WriteLine("Invalid selection. Please try again.");
+        }
+        else
+        {
+            Console.WriteLine("User choice: " + choice);
+            // Execute the selected function
+            optionsMap[choice].Invoke();
+        }
+    }
+    else if (answer.Equals("no"))
+    {
+        break;
+    }
+}
+
+
